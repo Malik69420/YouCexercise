@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import type { Exercise } from '../types';
 
-// Enhanced mock exercises with better descriptions and test cases
-const mockExercises: Exercise[] = [
+// Production-ready exercises with comprehensive test cases
+const productionExercises: Exercise[] = [
   {
     id: '1',
     title: 'Hello World',
@@ -12,9 +12,10 @@ const mockExercises: Exercise[] = [
 This is the classic first program that introduces you to C syntax and the printf function.
 
 Requirements:
-- Use printf() to output the text
-- Include the newline character
-- Make sure the output matches exactly`,
+- Use printf() to output the exact text "Hello, World!"
+- Include the necessary header file
+- Make sure the output matches exactly (case-sensitive)
+- Don't include extra spaces or characters`,
     starter_code: '#include <stdio.h>\n\nint main() {\n    // Write your code here\n    // Use printf to print "Hello, World!"\n    \n    return 0;\n}',
     expected_output: 'Hello, World!',
     difficulty: 'easy' as const,
@@ -27,16 +28,20 @@ Requirements:
     description: `Write a program that calculates and prints the sum of two numbers.
 
 You need to:
-1. Declare two integer variables
-2. Assign them values (you can hardcode 5 and 3)
-3. Calculate their sum
-4. Print the result in the format "Sum: X"
+1. Declare two integer variables with values 5 and 3
+2. Calculate their sum
+3. Print the result in the exact format "Sum: 8"
 
-Example: If the numbers are 5 and 3, output should be "Sum: 8"`,
-    starter_code: '#include <stdio.h>\n\nint main() {\n    // Declare two integer variables\n    int a = 5;\n    int b = 3;\n    \n    // Calculate and print their sum\n    \n    return 0;\n}',
+Example: If the numbers are 5 and 3, output should be "Sum: 8"
+
+Requirements:
+- Use integer variables
+- Use printf with proper format specifier
+- Output must match exactly: "Sum: 8"`,
+    starter_code: '#include <stdio.h>\n\nint main() {\n    // Declare two integer variables\n    int a = 5;\n    int b = 3;\n    \n    // Calculate and print their sum\n    // Format: "Sum: X" where X is the result\n    \n    return 0;\n}',
     expected_output: 'Sum: 8',
     difficulty: 'easy' as const,
-    tags: ['basics', 'arithmetic', 'variables'],
+    tags: ['basics', 'arithmetic', 'variables', 'printf'],
     created_at: new Date().toISOString(),
   },
   {
@@ -49,61 +54,120 @@ For example: 5! = 1 × 2 × 3 × 4 × 5 = 120
 
 Requirements:
 - Calculate factorial of 5 using a loop (for or while)
-- Print the result in the format "Factorial of 5 is 120"
-- Use proper variable declarations`,
-    starter_code: '#include <stdio.h>\n\nint main() {\n    int n = 5;\n    int factorial = 1;\n    \n    // Calculate factorial using a loop\n    \n    // Print the result\n    \n    return 0;\n}',
+- Print the result in the exact format "Factorial of 5 is 120"
+- Use proper variable declarations
+- Use a loop structure (not hardcoded multiplication)`,
+    starter_code: '#include <stdio.h>\n\nint main() {\n    int n = 5;\n    int factorial = 1;\n    \n    // Calculate factorial using a loop\n    // Hint: multiply factorial by each number from 1 to n\n    \n    // Print the result in format: "Factorial of 5 is 120"\n    \n    return 0;\n}',
     expected_output: 'Factorial of 5 is 120',
     difficulty: 'medium' as const,
-    tags: ['loops', 'arithmetic', 'factorial'],
+    tags: ['loops', 'arithmetic', 'factorial', 'for-loop'],
     created_at: new Date().toISOString(),
   },
   {
     id: '4',
-    title: 'Even or Odd',
+    title: 'Even or Odd Checker',
     description: `Write a program that determines if the number 7 is even or odd.
 
 Requirements:
-- Use the modulo operator (%) to check divisibility
+- Use the modulo operator (%) to check divisibility by 2
 - Use an if-else statement for the logic
-- Print "7 is odd" or "7 is even" accordingly
+- Print exactly "7 is odd" (for odd numbers) or "7 is even" (for even numbers)
+- The number to check is 7
 
-Hint: A number is even if it's divisible by 2 (remainder is 0)`,
-    starter_code: '#include <stdio.h>\n\nint main() {\n    int number = 7;\n    \n    // Check if number is even or odd\n    \n    return 0;\n}',
+Hint: A number is even if it's divisible by 2 (remainder is 0 when divided by 2)`,
+    starter_code: '#include <stdio.h>\n\nint main() {\n    int number = 7;\n    \n    // Check if number is even or odd using modulo operator\n    // Print "7 is odd" or "7 is even" accordingly\n    \n    return 0;\n}',
     expected_output: '7 is odd',
     difficulty: 'easy' as const,
-    tags: ['conditionals', 'modulo', 'if-else'],
+    tags: ['conditionals', 'modulo', 'if-else', 'operators'],
     created_at: new Date().toISOString(),
   },
   {
     id: '5',
-    title: 'Count to 10',
-    description: `Write a program that prints numbers from 1 to 10, each on a new line.
+    title: 'Count from 1 to 10',
+    description: `Write a program that prints numbers from 1 to 10, each on a separate line.
 
 Requirements:
 - Use a for loop or while loop
 - Print each number followed by a newline
-- Output should show: 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 (each on separate lines)`,
-    starter_code: '#include <stdio.h>\n\nint main() {\n    // Use a loop to print numbers 1 to 10\n    \n    return 0;\n}',
+- Output should show numbers 1 through 10, each on its own line
+- No extra spaces or formatting
+
+Expected output:
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10`,
+    starter_code: '#include <stdio.h>\n\nint main() {\n    // Use a loop to print numbers 1 to 10\n    // Each number should be on a separate line\n    \n    return 0;\n}',
     expected_output: '1\n2\n3\n4\n5\n6\n7\n8\n9\n10',
     difficulty: 'easy' as const,
-    tags: ['loops', 'for-loop', 'counting'],
+    tags: ['loops', 'for-loop', 'counting', 'printf'],
     created_at: new Date().toISOString(),
   },
   {
     id: '6',
-    title: 'Array Sum',
+    title: 'Array Sum Calculator',
     description: `Write a program that calculates the sum of elements in an array.
 
 Given array: {1, 2, 3, 4, 5}
 
 Requirements:
 - Declare and initialize the array with the given values
-- Use a loop to calculate the sum
-- Print the result in the format "Sum of array: 15"`,
-    starter_code: '#include <stdio.h>\n\nint main() {\n    int arr[] = {1, 2, 3, 4, 5};\n    int size = 5;\n    int sum = 0;\n    \n    // Calculate sum of array elements\n    \n    // Print the result\n    \n    return 0;\n}',
+- Use a loop to iterate through all elements
+- Calculate the sum of all elements
+- Print the result in the exact format "Sum of array: 15"
+
+The array has 5 elements and their sum is 1+2+3+4+5 = 15`,
+    starter_code: '#include <stdio.h>\n\nint main() {\n    int arr[] = {1, 2, 3, 4, 5};\n    int size = 5;\n    int sum = 0;\n    \n    // Calculate sum of array elements using a loop\n    \n    // Print the result in format: "Sum of array: 15"\n    \n    return 0;\n}',
     expected_output: 'Sum of array: 15',
     difficulty: 'medium' as const,
-    tags: ['arrays', 'loops', 'sum'],
+    tags: ['arrays', 'loops', 'sum', 'iteration'],
+    created_at: new Date().toISOString(),
+  },
+  {
+    id: '7',
+    title: 'Maximum of Three Numbers',
+    description: `Write a program that finds the maximum of three numbers: 15, 8, and 23.
+
+Requirements:
+- Declare three integer variables with values 15, 8, and 23
+- Use if-else statements to compare the numbers
+- Find the largest number among the three
+- Print the result in the exact format "Maximum is: 23"
+
+You need to compare all three numbers and determine which one is the largest.`,
+    starter_code: '#include <stdio.h>\n\nint main() {\n    int a = 15;\n    int b = 8;\n    int c = 23;\n    \n    // Find the maximum of three numbers using if-else\n    // Print result in format: "Maximum is: 23"\n    \n    return 0;\n}',
+    expected_output: 'Maximum is: 23',
+    difficulty: 'medium' as const,
+    tags: ['conditionals', 'comparison', 'if-else', 'logic'],
+    created_at: new Date().toISOString(),
+  },
+  {
+    id: '8',
+    title: 'Multiplication Table',
+    description: `Write a program that prints the multiplication table for the number 3 (from 3×1 to 3×5).
+
+Requirements:
+- Use a loop to generate the multiplication table
+- Print each line in the format "3 x 1 = 3"
+- Generate table from 1 to 5
+- Each result should be on a separate line
+
+Expected output:
+3 x 1 = 3
+3 x 2 = 6
+3 x 3 = 9
+3 x 4 = 12
+3 x 5 = 15`,
+    starter_code: '#include <stdio.h>\n\nint main() {\n    int number = 3;\n    \n    // Generate multiplication table for 3 (from 1 to 5)\n    // Format: "3 x 1 = 3"\n    \n    return 0;\n}',
+    expected_output: '3 x 1 = 3\n3 x 2 = 6\n3 x 3 = 9\n3 x 4 = 12\n3 x 5 = 15',
+    difficulty: 'medium' as const,
+    tags: ['loops', 'arithmetic', 'multiplication', 'formatting'],
     created_at: new Date().toISOString(),
   },
 ];
@@ -119,8 +183,8 @@ export const useExercises = () => {
   const fetchExercises = async () => {
     try {
       if (!isSupabaseConfigured) {
-        // Use enhanced mock data when Supabase is not configured
-        setExercises(mockExercises);
+        // Use production-ready exercises when Supabase is not configured
+        setExercises(productionExercises);
         setLoading(false);
         return;
       }
@@ -128,14 +192,16 @@ export const useExercises = () => {
       const { data, error } = await supabase
         .from('exercises')
         .select('*')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: true });
 
       if (error) throw error;
-      setExercises(data || []);
+      
+      // If no exercises in database, use production exercises as fallback
+      setExercises(data && data.length > 0 ? data : productionExercises);
     } catch (error) {
       console.error('Error fetching exercises:', error);
-      // Fallback to mock data on error
-      setExercises(mockExercises);
+      // Fallback to production exercises on error
+      setExercises(productionExercises);
     } finally {
       setLoading(false);
     }

@@ -1,6 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react';
 import Editor from '@monaco-editor/react';
-import { Play, Save, Terminal, Clock, MemoryStick, CheckCircle, XCircle, Zap } from 'lucide-react';
+import { Play, Save, Terminal, Clock, MemoryStick, CheckCircle, XCircle, Zap, Keyboard, X, Code } from 'lucide-react';
 import VirtualKeyboard from './VirtualKeyboard';
 import { cExecutor } from '../lib/cExecutor';
 
@@ -34,14 +34,29 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
   const handleEditorDidMount = (editor: any) => {
     editorRef.current = editor;
     
-    // Configure editor for better mobile experience
+    // Configure editor for better experience
     editor.updateOptions({
-      fontSize: window.innerWidth < 768 ? 12 : 14,
-      lineHeight: window.innerWidth < 768 ? 18 : 21,
-      minimap: { enabled: window.innerWidth >= 1024 },
+      fontSize: 14,
+      lineHeight: 21,
+      minimap: { enabled: window.innerWidth >= 1200 },
       scrollBeyondLastLine: false,
       wordWrap: 'on',
       automaticLayout: true,
+      padding: { top: 16, bottom: 16 },
+      lineNumbers: 'on',
+      glyphMargin: false,
+      folding: true,
+      lineDecorationsWidth: 0,
+      lineNumbersMinChars: 3,
+      renderLineHighlight: 'gutter',
+      selectOnLineNumbers: true,
+      tabSize: 4,
+      insertSpaces: true,
+      bracketPairColorization: { enabled: true },
+      guides: {
+        bracketPairs: true,
+        indentation: true,
+      },
     });
   };
 
@@ -53,7 +68,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
     }
 
     setIsRunning(true);
-    setOutput('Compiling and executing...');
+    setOutput('');
     setError('');
     setTestPassed(null);
     
@@ -119,22 +134,22 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
 
   return (
     <div className="flex flex-col h-full bg-gray-900">
-      {/* Header */}
+      {/* Editor Header */}
       <div className="flex items-center justify-between p-4 bg-gray-800 border-b border-gray-700">
         <div className="flex items-center gap-3">
-          <div className="bg-blue-600 p-2 rounded-lg">
-            <Terminal className="w-5 h-5 text-white" />
+          <div className="bg-gradient-to-r from-blue-500 to-purple-600 p-2 rounded-lg">
+            <Code className="w-5 h-5 text-white" />
           </div>
           <div>
             <h3 className="text-white font-semibold">Code Editor</h3>
-            <p className="text-gray-400 text-sm">Write your C code here</p>
+            <p className="text-gray-400 text-sm">Write your C solution here</p>
           </div>
         </div>
         
         <div className="flex items-center gap-2">
           <button
             onClick={handleSaveCode}
-            className="flex items-center gap-2 px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all duration-200 transform hover:scale-105"
+            className="flex items-center gap-2 px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all duration-200 transform hover:scale-105 shadow-lg"
           >
             <Save className="w-4 h-4" />
             <span className="hidden sm:inline">Save</span>
@@ -142,9 +157,9 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
           
           <button
             onClick={() => setKeyboardVisible(!keyboardVisible)}
-            className="md:hidden flex items-center gap-2 px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-all duration-200"
+            className="lg:hidden flex items-center gap-2 px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-all duration-200"
           >
-            <span className="text-lg">⌨️</span>
+            <Keyboard className="w-4 h-4" />
           </button>
           
           <button
@@ -167,7 +182,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
         </div>
       </div>
       
-      <div className="flex-1 flex flex-col lg:flex-row min-h-0">
+      <div className="flex-1 flex flex-col xl:flex-row min-h-0">
         {/* Code Editor */}
         <div className="flex-1 min-h-0 relative">
           <Editor
@@ -179,7 +194,9 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
             theme="vs-dark"
             options={{
               fontSize: 14,
-              fontFamily: "'JetBrains Mono', 'Fira Code', 'Consolas', monospace",
+              fontFamily: "'JetBrains Mono', 'Fira Code', 'SF Mono', 'Consolas', monospace",
+              fontWeight: '400',
+              lineHeight: 21,
               minimap: { enabled: false },
               scrollBeyondLastLine: false,
               wordWrap: 'on',
@@ -198,18 +215,24 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
                 bracketPairs: true,
                 indentation: true,
               },
+              padding: { top: 16, bottom: 16 },
+              smoothScrolling: true,
+              cursorBlinking: 'smooth',
+              cursorSmoothCaretAnimation: 'on',
+              renderWhitespace: 'selection',
+              showFoldingControls: 'mouseover',
             }}
           />
         </div>
         
-        {/* Output Panel */}
-        <div className="lg:w-2/5 min-h-[300px] lg:min-h-0 bg-gray-800 border-t lg:border-t-0 lg:border-l border-gray-700 flex flex-col">
-          {/* Output Header */}
+        {/* Output Terminal */}
+        <div className="xl:w-96 min-h-[300px] xl:min-h-0 bg-gray-900 border-t xl:border-t-0 xl:border-l border-gray-700 flex flex-col">
+          {/* Terminal Header */}
           <div className="p-4 border-b border-gray-700">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <Terminal className="w-5 h-5 text-green-400" />
-                <h4 className="text-white font-semibold">Output</h4>
+                <h4 className="text-white font-semibold">Terminal Output</h4>
               </div>
               
               {(executionTime > 0 || memoryUsed > 0) && (
@@ -228,7 +251,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
             
             {/* Test Status */}
             {testPassed !== null && (
-              <div className={`mt-2 flex items-center gap-2 px-3 py-2 rounded-lg ${
+              <div className={`flex items-center gap-2 px-3 py-2 rounded-lg ${
                 testPassed 
                   ? 'bg-green-900/50 text-green-300 border border-green-700' 
                   : 'bg-red-900/50 text-red-300 border border-red-700'
@@ -236,75 +259,115 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
                 {testPassed ? (
                   <>
                     <CheckCircle className="w-4 h-4" />
-                    <span className="font-medium">Test Passed!</span>
+                    <span className="font-medium">✅ All Tests Passed!</span>
                   </>
                 ) : (
                   <>
                     <XCircle className="w-4 h-4" />
-                    <span className="font-medium">Test Failed</span>
+                    <span className="font-medium">❌ Tests Failed</span>
                   </>
                 )}
               </div>
             )}
           </div>
           
-          {/* Output Content */}
-          <div className="flex-1 p-4 overflow-auto">
+          {/* Terminal Content */}
+          <div className="flex-1 p-4 overflow-auto font-mono text-sm">
             {error ? (
-              <div className="space-y-3">
-                <div className="bg-red-900/30 border border-red-700 rounded-lg p-3">
-                  <div className="flex items-center gap-2 mb-2">
-                    <XCircle className="w-4 h-4 text-red-400" />
-                    <span className="text-red-300 font-medium">Compilation Error</span>
+              <div className="space-y-4">
+                <div className="bg-red-900/30 border border-red-700 rounded-lg p-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <XCircle className="w-5 h-5 text-red-400" />
+                    <span className="text-red-300 font-semibold">Compilation Error</span>
                   </div>
-                  <pre className="text-red-200 text-sm font-mono whitespace-pre-wrap">
+                  <pre className="text-red-200 whitespace-pre-wrap leading-relaxed">
                     {error}
                   </pre>
                 </div>
                 
-                <div className="bg-yellow-900/30 border border-yellow-700 rounded-lg p-3">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Zap className="w-4 h-4 text-yellow-400" />
-                    <span className="text-yellow-300 font-medium">Quick Fix Tips</span>
+                <div className="bg-yellow-900/30 border border-yellow-700 rounded-lg p-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Zap className="w-5 h-5 text-yellow-400" />
+                    <span className="text-yellow-300 font-semibold">Quick Fix Tips</span>
                   </div>
-                  <ul className="text-yellow-200 text-sm space-y-1">
-                    <li>• Make sure you have #include &lt;stdio.h&gt;</li>
-                    <li>• Check that your main function is properly defined</li>
-                    <li>• Ensure all braces and parentheses are balanced</li>
-                    <li>• Don't forget the return statement</li>
-                  </ul>
+                  <div className="text-yellow-200 space-y-2 text-sm">
+                    <div className="flex items-start gap-2">
+                      <span className="text-yellow-400 mt-1">•</span>
+                      <span>Make sure you have <code className="bg-yellow-800/30 px-1 rounded">#include &lt;stdio.h&gt;</code></span>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <span className="text-yellow-400 mt-1">•</span>
+                      <span>Check that your main function is properly defined</span>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <span className="text-yellow-400 mt-1">•</span>
+                      <span>Ensure all braces <code className="bg-yellow-800/30 px-1 rounded">{ }</code> and parentheses <code className="bg-yellow-800/30 px-1 rounded">( )</code> are balanced</span>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <span className="text-yellow-400 mt-1">•</span>
+                      <span>Don't forget the <code className="bg-yellow-800/30 px-1 rounded">return 0;</code> statement</span>
+                    </div>
+                  </div>
                 </div>
               </div>
             ) : output ? (
-              <div className="space-y-3">
-                <div className="bg-gray-700 rounded-lg p-3">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Terminal className="w-4 h-4 text-green-400" />
-                    <span className="text-green-300 font-medium">Program Output</span>
+              <div className="space-y-4">
+                <div className="bg-gray-800 rounded-lg p-4 border border-gray-600">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Terminal className="w-5 h-5 text-green-400" />
+                    <span className="text-green-300 font-semibold">Program Output</span>
                   </div>
-                  <pre className="text-gray-100 font-mono text-sm whitespace-pre-wrap">
+                  <pre className="text-gray-100 whitespace-pre-wrap leading-relaxed">
                     {output}
                   </pre>
                 </div>
                 
                 {expectedOutput && (
-                  <div className="bg-blue-900/30 border border-blue-700 rounded-lg p-3">
-                    <div className="flex items-center gap-2 mb-2">
-                      <CheckCircle className="w-4 h-4 text-blue-400" />
-                      <span className="text-blue-300 font-medium">Expected Output</span>
+                  <div className="bg-blue-900/30 border border-blue-700 rounded-lg p-4">
+                    <div className="flex items-center gap-2 mb-3">
+                      <Target className="w-5 h-5 text-blue-400" />
+                      <span className="text-blue-300 font-semibold">Expected Output</span>
                     </div>
-                    <pre className="text-blue-200 font-mono text-sm whitespace-pre-wrap">
+                    <pre className="text-blue-200 whitespace-pre-wrap leading-relaxed">
                       {expectedOutput}
                     </pre>
+                  </div>
+                )}
+                
+                {testPassed !== null && (
+                  <div className={`border rounded-lg p-4 ${
+                    testPassed 
+                      ? 'bg-green-900/30 border-green-700' 
+                      : 'bg-red-900/30 border-red-700'
+                  }`}>
+                    <div className="flex items-center gap-2 mb-2">
+                      {testPassed ? (
+                        <>
+                          <CheckCircle className="w-5 h-5 text-green-400" />
+                          <span className="text-green-300 font-semibold">Test Result: PASSED</span>
+                        </>
+                      ) : (
+                        <>
+                          <XCircle className="w-5 h-5 text-red-400" />
+                          <span className="text-red-300 font-semibold">Test Result: FAILED</span>
+                        </>
+                      )}
+                    </div>
+                    <p className={`text-sm ${testPassed ? 'text-green-200' : 'text-red-200'}`}>
+                      {testPassed 
+                        ? 'Congratulations! Your solution produces the correct output.' 
+                        : 'Your output doesn\'t match the expected result. Check your logic and try again.'}
+                    </p>
                   </div>
                 )}
               </div>
             ) : (
               <div className="flex items-center justify-center h-full text-gray-400">
                 <div className="text-center">
-                  <Terminal className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                  <p>Click "Run Code" to see output</p>
-                  <p className="text-sm mt-1">Your program results will appear here</p>
+                  <Terminal className="w-16 h-16 mx-auto mb-4 opacity-50" />
+                  <p className="text-lg font-medium mb-2">Ready to Run</p>
+                  <p className="text-sm">Click "Run Code" to execute your program</p>
+                  <p className="text-xs mt-2 opacity-75">Your program results will appear here</p>
                 </div>
               </div>
             )}

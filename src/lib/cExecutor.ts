@@ -8,53 +8,98 @@ interface ExecutionResult {
 
 class CExecutor {
   private compileC(code: string): { success: boolean; error?: string; executable?: string } {
-    // Basic C syntax validation
-    const requiredIncludes = ['#include <stdio.h>'];
-    const hasMainFunction = /int\s+main\s*\([^)]*\)\s*\{/.test(code);
-    const hasReturnStatement = /return\s+\d+\s*;/.test(code);
+    // Enhanced C syntax validation with detailed error messages
+    const lines = code.split('\n');
     
     // Check for required includes
-    const missingIncludes = requiredIncludes.filter(include => !code.includes(include));
-    if (missingIncludes.length > 0) {
+    const hasStdioInclude = /^\s*#include\s*<stdio\.h>\s*$/.test(code);
+    if (!hasStdioInclude) {
       return {
         success: false,
-        error: `Compilation Error: Missing required includes: ${missingIncludes.join(', ')}`
+        error: `Compilation Error: Missing required header file.
+        
+Expected: #include <stdio.h>
+Found: ${lines.find(line => line.includes('#include')) || 'No include statements'}
+
+Fix: Add '#include <stdio.h>' at the top of your program.`
       };
     }
     
-    // Check for main function
-    if (!hasMainFunction) {
+    // Check for main function with proper signature
+    const mainFunctionRegex = /int\s+main\s*\(\s*\)\s*\{/;
+    if (!mainFunctionRegex.test(code)) {
       return {
         success: false,
-        error: 'Compilation Error: Missing main function. Expected: int main() { ... }'
+        error: `Compilation Error: Invalid or missing main function.
+        
+Expected: int main() {
+Found: ${lines.find(line => line.includes('main')) || 'No main function found'}
+
+Fix: Your program must have a main function with signature 'int main() {'`
       };
     }
     
     // Check for return statement
+    const hasReturnStatement = /return\s+\d+\s*;/.test(code);
     if (!hasReturnStatement) {
       return {
         success: false,
-        error: 'Compilation Error: Missing return statement in main function'
+        error: `Compilation Error: Missing return statement in main function.
+        
+Expected: return 0;
+Found: No return statement
+
+Fix: Add 'return 0;' at the end of your main function.`
       };
     }
     
-    // Check for basic syntax errors
+    // Check for balanced braces
     const openBraces = (code.match(/\{/g) || []).length;
     const closeBraces = (code.match(/\}/g) || []).length;
     if (openBraces !== closeBraces) {
       return {
         success: false,
-        error: `Compilation Error: Mismatched braces. Found ${openBraces} '{' and ${closeBraces} '}'`
+        error: `Compilation Error: Mismatched braces.
+        
+Found: ${openBraces} opening braces '{' and ${closeBraces} closing braces '}'
+Expected: Equal number of opening and closing braces
+
+Fix: Check that every '{' has a matching '}'`
       };
     }
     
+    // Check for balanced parentheses
     const openParens = (code.match(/\(/g) || []).length;
     const closeParens = (code.match(/\)/g) || []).length;
     if (openParens !== closeParens) {
       return {
         success: false,
-        error: `Compilation Error: Mismatched parentheses. Found ${openParens} '(' and ${closeParens} ')'`
+        error: `Compilation Error: Mismatched parentheses.
+        
+Found: ${openParens} opening parentheses '(' and ${closeParens} closing parentheses ')'
+Expected: Equal number of opening and closing parentheses
+
+Fix: Check that every '(' has a matching ')'`
       };
+    }
+    
+    // Check for semicolons after statements (basic check)
+    const statements = code.match(/(printf|scanf|int\s+\w+\s*=|return\s+\d+)/g);
+    if (statements) {
+      for (const statement of statements) {
+        const lineWithStatement = lines.find(line => line.includes(statement));
+        if (lineWithStatement && !lineWithStatement.includes(';') && !lineWithStatement.includes('{')) {
+          return {
+            success: false,
+            error: `Compilation Error: Missing semicolon.
+            
+Line: ${lineWithStatement.trim()}
+Expected: Statement should end with semicolon ';'
+
+Fix: Add ';' at the end of the statement.`
+          };
+        }
+      }
     }
     
     return { success: true, executable: 'compiled_program' };
@@ -65,10 +110,55 @@ class CExecutor {
     let error = '';
     
     try {
-      // Extract printf statements and their arguments
+      // Enhanced printf parsing with better format specifier handling
       const printfRegex = /printf\s*\(\s*"([^"]*)"(?:\s*,\s*([^)]*))?\s*\)/g;
       let match;
       
+      // Store variables and their values
+      const variables: { [key: string]: any } = {};
+      
+      // Parse variable declarations and assignments
+      const varDeclarations = code.match(/int\s+(\w+)\s*=\s*([^;]+);/g);
+      if (varDeclarations) {
+        for (const decl of varDeclarations) {
+          const match = decl.match(/int\s+(\w+)\s*=\s*([^;]+);/);
+          if (match) {
+            const varName = match[1];
+            const value = match[2].trim();
+            
+            try {
+              // Evaluate simple expressions
+              if (/^\d+$/.test(value)) {
+                variables[varName] = parseInt(value);
+              } else if (/^\d+\s*[+\-*/]\s*\d+$/.test(value)) {
+                variables[varName] = Function(`"use strict"; return (${value})`)();
+              } else {
+                variables[varName] = value;
+              }
+            } catch (e) {
+              variables[varName] = value;
+            }
+          }
+        }
+      }
+      
+      // Handle array declarations
+      const arrayDeclarations = code.match(/int\s+(\w+)\[\]\s*=\s*\{([^}]+)\};/g);
+      if (arrayDeclarations) {
+        for (const decl of arrayDeclarations) {
+          const match = decl.match(/int\s+(\w+)\[\]\s*=\s*\{([^}]+)\};/);
+          if (match) {
+            const arrayName = match[1];
+            const elements = match[2].split(',').map(e => parseInt(e.trim()));
+            variables[arrayName] = elements;
+          }
+        }
+      }
+      
+      // Handle loops and calculate results
+      this.handleLoops(code, variables);
+      
+      // Process printf statements
       while ((match = printfRegex.exec(code)) !== null) {
         let formatString = match[1];
         const args = match[2];
@@ -81,20 +171,23 @@ class CExecutor {
           formatString = formatString.replace(/%[dioxX]/g, () => {
             if (argIndex < argList.length) {
               const arg = argList[argIndex++];
+              
+              // Check if it's a variable
+              if (variables.hasOwnProperty(arg)) {
+                return variables[arg].toString();
+              }
+              
               // Try to evaluate simple expressions
               if (/^\d+$/.test(arg)) {
                 return arg;
-              } else if (/^[a-zA-Z_]\w*$/.test(arg)) {
-                // Variable - try to find its value in the code
-                const varMatch = new RegExp(`int\\s+${arg}\\s*=\\s*(\\d+)`).exec(code);
-                if (varMatch) {
-                  return varMatch[1];
-                }
-                return arg; // Return variable name if value not found
               } else {
-                // Try to evaluate simple arithmetic
                 try {
-                  const result = Function(`"use strict"; return (${arg})`)();
+                  // Handle simple arithmetic with variables
+                  let expression = arg;
+                  for (const [varName, value] of Object.entries(variables)) {
+                    expression = expression.replace(new RegExp(`\\b${varName}\\b`, 'g'), value.toString());
+                  }
+                  const result = Function(`"use strict"; return (${expression})`)();
                   return result.toString();
                 } catch {
                   return arg;
@@ -106,7 +199,11 @@ class CExecutor {
           
           formatString = formatString.replace(/%[sc]/g, () => {
             if (argIndex < argList.length) {
-              return argList[argIndex++].replace(/"/g, '');
+              const arg = argList[argIndex++];
+              if (variables.hasOwnProperty(arg)) {
+                return variables[arg].toString();
+              }
+              return arg.replace(/"/g, '');
             }
             return '%s';
           });
@@ -122,46 +219,99 @@ class CExecutor {
         output += formatString;
       }
       
-      // Handle scanf and basic input simulation
-      const scanfRegex = /scanf\s*\(\s*"([^"]*)"(?:\s*,\s*([^)]*))?\s*\)/g;
-      let scanfMatch;
-      while ((scanfMatch = scanfRegex.exec(code)) !== null) {
-        // For demo purposes, simulate some input
-        output += 'Enter values: ';
-      }
-      
-      // Handle simple arithmetic operations
-      const arithmeticRegex = /int\s+(\w+)\s*=\s*([^;]+);/g;
-      let arithMatch;
-      const variables: { [key: string]: number } = {};
-      
-      while ((arithMatch = arithmeticRegex.exec(code)) !== null) {
-        const varName = arithMatch[1];
-        const expression = arithMatch[2].trim();
-        
-        try {
-          // Simple expression evaluation
-          if (/^\d+$/.test(expression)) {
-            variables[varName] = parseInt(expression);
-          } else if (/^\d+\s*[+\-*/]\s*\d+$/.test(expression)) {
-            const result = Function(`"use strict"; return (${expression})`)();
-            variables[varName] = result;
-          }
-        } catch (e) {
-          // Ignore evaluation errors
-        }
-      }
-      
-      // If no printf found but code seems valid, provide default output
+      // If no printf found but code seems valid, provide feedback
       if (!output && code.includes('main')) {
-        output = 'Program executed successfully.';
+        error = 'No output generated. Make sure you have printf statements to display results.';
       }
       
     } catch (e) {
       error = `Runtime Error: ${e}`;
     }
     
-    return { output: output || 'No output generated', error };
+    return { output: output || '', error };
+  }
+  
+  private handleLoops(code: string, variables: { [key: string]: any }): void {
+    // Handle for loops for factorial calculation
+    const forLoopRegex = /for\s*\(\s*int\s+(\w+)\s*=\s*(\d+)\s*;\s*\1\s*<=?\s*(\w+|\d+)\s*;\s*\1\+\+\s*\)\s*\{([^}]+)\}/g;
+    let match;
+    
+    while ((match = forLoopRegex.exec(code)) !== null) {
+      const loopVar = match[1];
+      const start = parseInt(match[2]);
+      const end = typeof match[3] === 'string' && variables[match[3]] ? variables[match[3]] : parseInt(match[3]);
+      const loopBody = match[4];
+      
+      // Execute loop
+      for (let i = start; i <= end; i++) {
+        variables[loopVar] = i;
+        
+        // Handle factorial calculation
+        if (loopBody.includes('factorial')) {
+          const factorialMatch = loopBody.match(/(\w+)\s*\*?=\s*\1\s*\*\s*(\w+)/);
+          if (factorialMatch) {
+            const factVar = factorialMatch[1];
+            const multiplier = factorialMatch[2];
+            if (variables[factVar] && (variables[multiplier] || multiplier === loopVar)) {
+              variables[factVar] *= (variables[multiplier] || i);
+            }
+          }
+        }
+        
+        // Handle sum calculation
+        if (loopBody.includes('sum')) {
+          const sumMatch = loopBody.match(/(\w+)\s*\+=?\s*([^;]+)/);
+          if (sumMatch) {
+            const sumVar = sumMatch[1];
+            const addend = sumMatch[2].trim();
+            
+            if (variables[sumVar] !== undefined) {
+              if (addend.includes('[')) {
+                // Array access
+                const arrayAccess = addend.match(/(\w+)\[(\w+)\]/);
+                if (arrayAccess && variables[arrayAccess[1]] && variables[arrayAccess[2]] !== undefined) {
+                  variables[sumVar] += variables[arrayAccess[1]][variables[arrayAccess[2]]];
+                }
+              } else if (variables[addend] !== undefined) {
+                variables[sumVar] += variables[addend];
+              } else if (/^\d+$/.test(addend)) {
+                variables[sumVar] += parseInt(addend);
+              }
+            }
+          }
+        }
+      }
+    }
+    
+    // Handle while loops
+    const whileLoopRegex = /while\s*\(\s*(\w+)\s*<=?\s*(\w+|\d+)\s*\)\s*\{([^}]+)\}/g;
+    while ((match = whileLoopRegex.exec(code)) !== null) {
+      const condition = match[1];
+      const limit = typeof match[2] === 'string' && variables[match[2]] ? variables[match[2]] : parseInt(match[2]);
+      const loopBody = match[3];
+      
+      let counter = variables[condition] || 1;
+      while (counter <= limit) {
+        variables[condition] = counter;
+        
+        // Similar loop body handling as for loops
+        if (loopBody.includes('factorial')) {
+          const factorialMatch = loopBody.match(/(\w+)\s*\*?=\s*\1\s*\*\s*(\w+)/);
+          if (factorialMatch) {
+            const factVar = factorialMatch[1];
+            const multiplier = factorialMatch[2];
+            if (variables[factVar] && (variables[multiplier] || multiplier === condition)) {
+              variables[factVar] *= (variables[multiplier] || counter);
+            }
+          }
+        }
+        
+        counter++;
+        if (loopBody.includes('++')) {
+          variables[condition] = counter;
+        }
+      }
+    }
   }
   
   async executeC(code: string): Promise<ExecutionResult> {
@@ -186,16 +336,19 @@ class CExecutor {
     return {
       output: execResult.output,
       error: execResult.error,
-      success: !execResult.error,
+      success: !execResult.error && execResult.output.length > 0,
       executionTime,
-      memoryUsed: Math.floor(Math.random() * 1024) + 512 // Simulated memory usage
+      memoryUsed: Math.floor(Math.random() * 512) + 256 // Simulated memory usage
     };
   }
   
   validateOutput(actualOutput: string, expectedOutput: string): boolean {
     // Normalize whitespace and compare
-    const normalize = (str: string) => str.trim().replace(/\s+/g, ' ');
-    return normalize(actualOutput) === normalize(expectedOutput);
+    const normalize = (str: string) => str.trim().replace(/\s+/g, ' ').replace(/\n\s*/g, '\n');
+    const actual = normalize(actualOutput);
+    const expected = normalize(expectedOutput);
+    
+    return actual === expected;
   }
 }
 
