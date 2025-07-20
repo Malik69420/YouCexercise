@@ -207,42 +207,39 @@ const AuthForm: React.FC<AuthFormProps> = ({ onSuccess }) => {
             </div>
           )}
 
-          {isSupabaseConfigured && (
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-4 rounded-xl font-bold hover:from-blue-700 hover:to-purple-700 transition-all duration-300 transform hover:scale-105 disabled:opacity-50 shadow-xl"
-            >
-              {loading ? (
-                <div className="flex items-center justify-center gap-3">
-                  <Loader2 className="animate-spin w-5 h-5" />
-                  <span>{isLogin ? 'Signing In...' : 'Creating Account...'}</span>
-                </div>
-              ) : (
-                <div className="flex items-center justify-center gap-3">
-                  <Code2 className="w-5 h-5" />
-                  <span>{isLogin ? 'Sign In' : 'Create Account'}</span>
-                </div>
-              )}
-            </button>
-          )}
+          {/* Sign In/Sign Up Button - ALWAYS SHOW */}
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-4 rounded-xl font-bold hover:from-blue-700 hover:to-purple-700 transition-all duration-300 transform hover:scale-105 disabled:opacity-50 shadow-xl"
+          >
+            {loading ? (
+              <div className="flex items-center justify-center gap-3">
+                <Loader2 className="animate-spin w-5 h-5" />
+                <span>{isLogin ? 'Signing In...' : 'Creating Account...'}</span>
+              </div>
+            ) : (
+              <div className="flex items-center justify-center gap-3">
+                <Code2 className="w-5 h-5" />
+                <span>{isLogin ? 'Sign In' : 'Create Account'}</span>
+              </div>
+            )}
+          </button>
         </form>
 
-        {/* Toggle Auth Mode */}
-        {isSupabaseConfigured && (
-          <div className="mt-8 text-center">
-            <button
-              onClick={() => {
-                setIsLogin(!isLogin);
-                setError('');
-                setSuccess('');
-              }}
-              className="text-blue-300 hover:text-blue-100 text-sm font-semibold transition-colors"
-            >
-              {isLogin ? "Don't have an account? Sign up" : 'Already have an account? Sign in'}
-            </button>
-          </div>
-        )}
+        {/* Toggle Auth Mode - ALWAYS SHOW */}
+        <div className="mt-8 text-center">
+          <button
+            onClick={() => {
+              setIsLogin(!isLogin);
+              setError('');
+              setSuccess('');
+            }}
+            className="text-blue-300 hover:text-blue-100 text-sm font-semibold transition-colors"
+          >
+            {isLogin ? "Don't have an account? Sign up" : 'Already have an account? Sign in'}
+          </button>
+        </div>
         
         {/* Features Preview */}
         <div className="mt-8 pt-6 border-t border-white/20">

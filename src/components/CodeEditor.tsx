@@ -239,7 +239,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
                 <div className="flex items-center gap-4 text-sm text-gray-400">
                   <div className="flex items-center gap-1">
                     <Clock className="w-4 h-4" />
-                    <span>{executionTime.toFixed(1)}ms</span>
+                    <Terminal className="w-5 h-5 text-blue-400" />
                   </div>
                   <div className="flex items-center gap-1">
                     <MemoryStick className="w-4 h-4" />
