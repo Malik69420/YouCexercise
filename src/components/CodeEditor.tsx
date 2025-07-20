@@ -1,6 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react';
 import Editor from '@monaco-editor/react';
-import { Play, Save, Terminal, Clock, MemoryStick, CheckCircle, XCircle, Zap, Keyboard, X, Code } from 'lucide-react';
+import { Play, Save, Terminal, Clock, MemoryStick, CheckCircle, XCircle, Zap, Keyboard, X, Code, Target } from 'lucide-react';
 import VirtualKeyboard from './VirtualKeyboard';
 import { cExecutor } from '../lib/cExecutor';
 
