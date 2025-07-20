@@ -170,6 +170,56 @@ Expected output:
     tags: ['loops', 'arithmetic', 'multiplication', 'formatting'],
     created_at: new Date().toISOString(),
   },
+  {
+    id: '9',
+    title: 'Simple Calculator',
+    description: `Write a program that performs basic arithmetic operations.
+
+The program should:
+1. Declare two numbers: 10 and 4
+2. Calculate and display their sum, difference, product, and quotient
+3. Format the output exactly as shown below
+
+Requirements:
+- Use integer variables for the numbers
+- Calculate all four operations
+- Print results in the exact format shown
+
+Expected output format:
+10 + 4 = 14
+10 - 4 = 6
+10 * 4 = 40
+10 / 4 = 2`,
+    starter_code: '#include <stdio.h>\n\nint main() {\n    int a = 10;\n    int b = 4;\n    \n    // Calculate and print all four operations\n    // Addition: a + b\n    // Subtraction: a - b\n    // Multiplication: a * b\n    // Division: a / b (integer division)\n    \n    return 0;\n}',
+    expected_output: '10 + 4 = 14\n10 - 4 = 6\n10 * 4 = 40\n10 / 4 = 2',
+    difficulty: 'easy' as const,
+    tags: ['arithmetic', 'operators', 'printf', 'calculations'],
+    created_at: new Date().toISOString(),
+  },
+  {
+    id: '10',
+    title: 'Grade Classifier',
+    description: `Write a program that classifies a grade based on a score.
+
+Given score: 85
+
+Classification rules:
+- 90-100: Grade A
+- 80-89: Grade B  
+- 70-79: Grade C
+- 60-69: Grade D
+- Below 60: Grade F
+
+Requirements:
+- Use if-else if statements
+- Check the score 85 and print the corresponding grade
+- Output format: "Grade: B"`,
+    starter_code: '#include <stdio.h>\n\nint main() {\n    int score = 85;\n    \n    // Classify the grade based on score\n    // Use if-else if statements\n    // Print result in format: "Grade: B"\n    \n    return 0;\n}',
+    expected_output: 'Grade: B',
+    difficulty: 'medium' as const,
+    tags: ['conditionals', 'if-else', 'classification', 'logic'],
+    created_at: new Date().toISOString(),
+  },
 ];
 
 export const useExercises = () => {
