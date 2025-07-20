@@ -251,20 +251,20 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
             
             {/* Test Status */}
             {testPassed !== null && (
-              <div className={`flex items-center gap-2 px-3 py-2 rounded-lg ${
+              <div className={`flex items-center gap-2 px-4 py-3 rounded-xl border-2 transition-all duration-300 ${
                 testPassed 
-                  ? 'bg-green-900/50 text-green-300 border border-green-700' 
-                  : 'bg-red-900/50 text-red-300 border border-red-700'
+                  ? 'bg-green-900/30 text-green-300 border-green-500/50 shadow-green-500/20 shadow-lg' 
+                  : 'bg-red-900/30 text-red-300 border-red-500/50 shadow-red-500/20 shadow-lg'
               }`}>
                 {testPassed ? (
                   <>
-                    <CheckCircle className="w-4 h-4" />
-                    <span className="font-medium">✅ All Tests Passed!</span>
+                    <CheckCircle className="w-5 h-5 animate-pulse" />
+                    <span className="font-bold text-lg">🎉 All Tests Passed!</span>
                   </>
                 ) : (
                   <>
-                    <XCircle className="w-4 h-4" />
-                    <span className="font-medium">❌ Tests Failed</span>
+                    <XCircle className="w-5 h-5 animate-pulse" />
+                    <span className="font-bold text-lg">❌ Tests Failed</span>
                   </>
                 )}
               </div>
@@ -335,28 +335,32 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
                 )}
                 
                 {testPassed !== null && (
-                  <div className={`border rounded-lg p-4 ${
+                  <div className={`border-2 rounded-xl p-6 transition-all duration-300 ${
                     testPassed 
-                      ? 'bg-green-900/30 border-green-700' 
-                      : 'bg-red-900/30 border-red-700'
+                      ? 'bg-green-900/20 border-green-500/50 shadow-green-500/20 shadow-xl' 
+                      : 'bg-red-900/20 border-red-500/50 shadow-red-500/20 shadow-xl'
                   }`}>
-                    <div className="flex items-center gap-2 mb-2">
+                    <div className="flex items-center gap-3 mb-4">
                       {testPassed ? (
                         <>
-                          <CheckCircle className="w-5 h-5 text-green-400" />
-                          <span className="text-green-300 font-semibold">Test Result: PASSED</span>
+                          <div className="bg-green-500 p-2 rounded-full">
+                            <CheckCircle className="w-6 h-6 text-white" />
+                          </div>
+                          <span className="text-green-300 font-bold text-xl">Test Result: PASSED ✅</span>
                         </>
                       ) : (
                         <>
-                          <XCircle className="w-5 h-5 text-red-400" />
-                          <span className="text-red-300 font-semibold">Test Result: FAILED</span>
+                          <div className="bg-red-500 p-2 rounded-full">
+                            <XCircle className="w-6 h-6 text-white" />
+                          </div>
+                          <span className="text-red-300 font-bold text-xl">Test Result: FAILED ❌</span>
                         </>
                       )}
                     </div>
-                    <p className={`text-sm ${testPassed ? 'text-green-200' : 'text-red-200'}`}>
+                    <p className={`text-base leading-relaxed ${testPassed ? 'text-green-200' : 'text-red-200'}`}>
                       {testPassed 
-                        ? 'Congratulations! Your solution produces the correct output.' 
-                        : 'Your output doesn\'t match the expected result. Check your logic and try again.'}
+                        ? '🎉 Congratulations! Your solution produces the correct output. Great job!' 
+                        : '🔍 Your output doesn\'t match the expected result. Check your logic and try again.'}
                     </p>
                   </div>
                 )}

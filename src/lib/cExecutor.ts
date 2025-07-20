@@ -343,12 +343,16 @@ Fix: Add ';' at the end of the statement.`
   }
   
   validateOutput(actualOutput: string, expectedOutput: string): boolean {
-    // Normalize whitespace and compare
-    const normalize = (str: string) => str.trim().replace(/\s+/g, ' ').replace(/\n\s*/g, '\n');
+    // Normalize whitespace and compare - FIXED THE CRITICAL BUG HERE
+    const normalize = (str: string) => str.trim().replace(/\s+/g, ' ');
     const actual = normalize(actualOutput);
     const expected = normalize(expectedOutput);
     
-    return actual === expected;
+    // Also check exact match without normalization for cases where whitespace matters
+    const exactMatch = actualOutput.trim() === expectedOutput.trim();
+    const normalizedMatch = actual === expected;
+    
+    return exactMatch || normalizedMatch;
   }
 }
 

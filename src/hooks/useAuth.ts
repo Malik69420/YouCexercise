@@ -8,6 +8,16 @@ export const useAuth = () => {
 
   useEffect(() => {
     if (!isSupabaseConfigured) {
+      // Demo mode - create a mock user
+      setUser({
+        id: 'demo-user',
+        email: 'demo@codelab.com',
+        created_at: new Date().toISOString(),
+        app_metadata: {},
+        user_metadata: {},
+        aud: 'authenticated',
+        confirmation_sent_at: new Date().toISOString(),
+      } as User);
       setLoading(false);
       return;
     }
@@ -31,8 +41,20 @@ export const useAuth = () => {
 
   const signIn = async (email: string, password: string) => {
     if (!isSupabaseConfigured) {
-      return { data: null, error: new Error('Supabase not configured') };
+      // Demo mode - simulate successful login
+      return { 
+        data: { 
+          user: {
+            id: 'demo-user',
+            email: email,
+            created_at: new Date().toISOString(),
+          } as User,
+          session: null 
+        }, 
+        error: null 
+      };
     }
+    
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
@@ -42,19 +64,36 @@ export const useAuth = () => {
 
   const signUp = async (email: string, password: string) => {
     if (!isSupabaseConfigured) {
-      return { data: null, error: new Error('Supabase not configured') };
+      // Demo mode - simulate successful signup
+      return { 
+        data: { 
+          user: {
+            id: 'demo-user',
+            email: email,
+            created_at: new Date().toISOString(),
+          } as User,
+          session: null 
+        }, 
+        error: null 
+      };
     }
+    
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
+      options: {
+        emailRedirectTo: window.location.origin,
+      }
     });
     return { data, error };
   };
 
   const signOut = async () => {
     if (!isSupabaseConfigured) {
-      return { error: new Error('Supabase not configured') };
+      setUser(null);
+      return { error: null };
     }
+    
     const { error } = await supabase.auth.signOut();
     return { error };
   };
