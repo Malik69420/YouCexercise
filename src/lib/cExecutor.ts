@@ -336,28 +336,17 @@ Fix: Check that every '(' has a matching ')'`
   private processPrintfStatements(code: string, context: any): string {
     let output = '';
     
-    // First, add any conditional output
-    if (context.conditionalOutput) {
-      output += context.conditionalOutput;
-      return output;
-    }
-    
-    // Process regular printf statements (outside of conditionals)
-    const printfRegex = /printf\s*\(\s*"([^"]*)"(?:\s*,\s*([^)]*))?\s*\)\s*;/g;
+    // Process printf statements
+    const printfRegex = /printf\s*\(\s*"([^"]*)"(?:\s*,\s*([^)]*))?\s*\)/g;
     let match;
     
     while ((match = printfRegex.exec(code)) !== null) {
-      // Check if this printf is inside braces (conditional block)
-      const beforeMatch = code.substring(0, match.index);
-      const openBraces = (beforeMatch.match(/\{/g) || []).length;
-      const closeBraces = (beforeMatch.match(/\}/g) || []).length;
-      
-      if (openBraces > closeBraces) {
-        // This printf is inside a block, skip it (already processed)
-        continue;
-      }
-      
       output += this.processSinglePrintf(match[0], context);
+    }
+    
+    // Add any conditional output
+    if (context.conditionalOutput) {
+      output += context.conditionalOutput;
     }
     
     return output;
