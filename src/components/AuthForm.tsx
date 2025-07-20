@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Mail, Lock, Code2, Eye, EyeOff, CheckCircle, XCircle, Loader2, Sparkles } from 'lucide-react';
+import { Mail, Lock, Code2, Eye, EyeOff, CheckCircle, XCircle, Loader2, Sparkles, UserPlus, LogIn } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { isSupabaseConfigured } from '../lib/supabase';
 
@@ -18,8 +18,34 @@ const AuthForm: React.FC<AuthFormProps> = ({ onSuccess }) => {
   
   const { signIn, signUp } = useAuth();
 
+  const validateForm = () => {
+    if (!email.trim()) {
+      setError('Email is required');
+      return false;
+    }
+    if (!email.includes('@')) {
+      setError('Please enter a valid email address');
+      return false;
+    }
+    if (!password.trim()) {
+      setError('Password is required');
+      return false;
+    }
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters long');
+      return false;
+    }
+    return true;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // CRITICAL: Validate form data
+    if (!validateForm()) {
+      return;
+    }
+
     setLoading(true);
     setError('');
     setSuccess('');
@@ -158,7 +184,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onSuccess }) => {
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full pl-12 pr-4 py-4 bg-white/10 border border-white/20 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all duration-300 text-white placeholder-blue-200 backdrop-blur-sm"
                   placeholder="Enter your email"
-                  required={isSupabaseConfigured}
+                  required
                 />
               </div>
             </div>
@@ -175,7 +201,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onSuccess }) => {
                   onChange={(e) => setPassword(e.target.value)}
                   className="w-full pl-12 pr-12 py-4 bg-white/10 border border-white/20 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all duration-300 text-white placeholder-blue-200 backdrop-blur-sm"
                   placeholder="Enter your password"
-                  required={isSupabaseConfigured}
+                  required
                   minLength={6}
                 />
                 <button
@@ -207,7 +233,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onSuccess }) => {
             </div>
           )}
 
-          {/* Sign In/Sign Up Button - ALWAYS SHOW */}
+          {/* CRITICAL: ALWAYS SHOW SIGN IN/SIGN UP BUTTON */}
           <button
             type="submit"
             disabled={loading}
@@ -220,24 +246,26 @@ const AuthForm: React.FC<AuthFormProps> = ({ onSuccess }) => {
               </div>
             ) : (
               <div className="flex items-center justify-center gap-3">
-                <Code2 className="w-5 h-5" />
-                <span>{isLogin ? 'Sign In' : 'Create Account'}</span>
+                {isLogin ? <LogIn className="w-5 h-5" /> : <UserPlus className="w-5 h-5" />}
+                <span>{isLogin ? 'Sign In to Account' : 'Create New Account'}</span>
               </div>
             )}
           </button>
         </form>
 
-        {/* Toggle Auth Mode - ALWAYS SHOW */}
+        {/* Toggle Auth Mode */}
         <div className="mt-8 text-center">
           <button
             onClick={() => {
               setIsLogin(!isLogin);
               setError('');
               setSuccess('');
+              setEmail('');
+              setPassword('');
             }}
             className="text-blue-300 hover:text-blue-100 text-sm font-semibold transition-colors"
           >
-            {isLogin ? "Don't have an account? Sign up" : 'Already have an account? Sign in'}
+            {isLogin ? "Don't have an account? Create one here" : 'Already have an account? Sign in here'}
           </button>
         </div>
         

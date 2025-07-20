@@ -8,16 +8,8 @@ export const useAuth = () => {
 
   useEffect(() => {
     if (!isSupabaseConfigured) {
-      // Demo mode - create a mock user
-      setUser({
-        id: 'demo-user',
-        email: 'demo@codelab.com',
-        created_at: new Date().toISOString(),
-        app_metadata: {},
-        user_metadata: {},
-        aud: 'authenticated',
-        confirmation_sent_at: new Date().toISOString(),
-      } as User);
+      // Demo mode - no user initially
+      setUser(null);
       setLoading(false);
       return;
     }
@@ -40,15 +32,30 @@ export const useAuth = () => {
   }, []);
 
   const signIn = async (email: string, password: string) => {
+    // CRITICAL: Validate inputs
+    if (!email || !password) {
+      return { 
+        data: null, 
+        error: { message: 'Email and password are required' } 
+      };
+    }
+
     if (!isSupabaseConfigured) {
       // Demo mode - simulate successful login
+      const mockUser = {
+        id: 'demo-user',
+        email: email,
+        created_at: new Date().toISOString(),
+        app_metadata: {},
+        user_metadata: {},
+        aud: 'authenticated',
+        confirmation_sent_at: new Date().toISOString(),
+      } as User;
+      
+      setUser(mockUser);
       return { 
         data: { 
-          user: {
-            id: 'demo-user',
-            email: email,
-            created_at: new Date().toISOString(),
-          } as User,
+          user: mockUser,
           session: null 
         }, 
         error: null 
@@ -63,15 +70,37 @@ export const useAuth = () => {
   };
 
   const signUp = async (email: string, password: string) => {
+    // CRITICAL: Validate inputs
+    if (!email || !password) {
+      return { 
+        data: null, 
+        error: { message: 'Email and password are required' } 
+      };
+    }
+
+    if (password.length < 6) {
+      return { 
+        data: null, 
+        error: { message: 'Password must be at least 6 characters long' } 
+      };
+    }
+
     if (!isSupabaseConfigured) {
       // Demo mode - simulate successful signup
+      const mockUser = {
+        id: 'demo-user',
+        email: email,
+        created_at: new Date().toISOString(),
+        app_metadata: {},
+        user_metadata: {},
+        aud: 'authenticated',
+        confirmation_sent_at: new Date().toISOString(),
+      } as User;
+      
+      setUser(mockUser);
       return { 
         data: { 
-          user: {
-            id: 'demo-user',
-            email: email,
-            created_at: new Date().toISOString(),
-          } as User,
+          user: mockUser,
           session: null 
         }, 
         error: null 
