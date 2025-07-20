@@ -431,22 +431,26 @@ Fix: Check that every '(' has a matching ')'`
     const execResult = this.executeProgram(code);
     const executionTime = performance.now() - startTime;
     
+    // Determine success based on whether we got output (not just no error)
+    const hasOutput = execResult.output && execResult.output.trim().length > 0;
+    const hasError = execResult.error && execResult.error.trim().length > 0;
+    
     return {
       output: execResult.output,
       error: execResult.error,
-      success: !execResult.error && execResult.output.length > 0,
+      success: hasOutput && !hasError,
       executionTime,
       memoryUsed: Math.floor(Math.random() * 512) + 256
     };
   }
   
   validateOutput(actualOutput: string, expectedOutput: string): boolean {
-    // Normalize both outputs by removing extra whitespace and newlines
+    // More lenient normalization for output comparison
     const normalizeOutput = (str: string) => {
       return str
         .trim()
-        .replace(/\s+/g, ' ')
-        .replace(/\n+/g, '\n')
+        .replace(/\s+/g, ' ') // Replace multiple spaces with single space
+        .replace(/\n\s*/g, '\n') // Clean up newlines
         .trim();
     };
     

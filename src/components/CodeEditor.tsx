@@ -89,11 +89,17 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
         
         // Check if output matches expected output
         let passed = true;
+        let detailedMessage = '';
+        
         if (expectedOutput) {
           passed = cExecutor.validateOutput(result.output, expectedOutput);
-          setTestPassed(passed);
+          
+          if (!passed) {
+            detailedMessage = `Expected: "${expectedOutput}"\nActual: "${result.output}"`;
+          }
         }
         
+        setTestPassed(passed);
         onRun(code, result.output, passed, result.executionTime);
       }
     } catch (error) {
@@ -357,11 +363,62 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
                         </>
                       )}
                     </div>
-                    <p className={`text-base leading-relaxed ${testPassed ? 'text-green-200' : 'text-red-200'}`}>
-                      {testPassed 
-                        ? '🎉 Congratulations! Your solution produces the correct output. Great job!' 
-                        : '🔍 Your output doesn\'t match the expected result. Check your logic and try again.'}
-                    </p>
+                    
+                    {testPassed ? (
+                      <p className="text-green-200 text-base leading-relaxed">
+                        🎉 Congratulations! Your solution produces the correct output. Great job!
+                      </p>
+                    ) : (
+                      <div className="space-y-3">
+                        <p className="text-red-200 text-base leading-relaxed">
+                          🔍 Your output doesn't match the expected result. Here's what went wrong:
+                        </p>
+                        
+                        <div className="bg-red-900/30 border border-red-700/50 rounded-lg p-4">
+                          <div className="grid grid-cols-1 gap-4">
+                            <div>
+                              <h4 className="text-red-300 font-semibold mb-2 flex items-center gap-2">
+                                <Target className="w-4 h-4" />
+                                Expected Output:
+                              </h4>
+                              <pre className="text-green-300 bg-green-900/20 p-3 rounded border border-green-700/30 text-sm font-mono whitespace-pre-wrap">
+                                {expectedOutput}
+                              </pre>
+                            </div>
+                            
+                            <div>
+                              <h4 className="text-red-300 font-semibold mb-2 flex items-center gap-2">
+                                <Terminal className="w-4 h-4" />
+                                Your Output:
+                              </h4>
+                              <pre className="text-red-300 bg-red-900/20 p-3 rounded border border-red-700/30 text-sm font-mono whitespace-pre-wrap">
+                                {output || '(no output)'}
+                              </pre>
+                            </div>
+                          </div>
+                          
+                          <div className="mt-4 pt-4 border-t border-red-700/30">
+                            <h4 className="text-red-300 font-semibold mb-2">💡 Debugging Tips:</h4>
+                            <ul className="text-red-200 text-sm space-y-1">
+                              {!output || output.trim() === '' ? (
+                                <>
+                                  <li>• Your program didn't produce any output</li>
+                                  <li>• Make sure you have printf() statements</li>
+                                  <li>• Check that your program logic is executing</li>
+                                </>
+                              ) : (
+                                <>
+                                  <li>• Check for extra spaces, newlines, or formatting differences</li>
+                                  <li>• Verify your printf format strings match exactly</li>
+                                  <li>• Make sure variable calculations are correct</li>
+                                  <li>• Check if you're printing the right variables</li>
+                                </>
+                              )}
+                            </ul>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

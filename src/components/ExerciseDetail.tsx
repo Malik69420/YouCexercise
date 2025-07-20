@@ -21,9 +21,23 @@ const ExerciseDetail: React.FC<ExerciseDetailProps> = ({ exercise, onBack }) => 
   const handleRunCode = async (code: string, output: string, success: boolean, executionTime: number) => {
     try {
       if (!isSupabaseConfigured) {
+        // Create detailed status message for demo mode
+        let statusMessage = '';
+        if (success) {
+          statusMessage = 'Test passed! Great work!';
+        } else {
+          if (!output || output.trim() === '') {
+            statusMessage = 'No output generated. Make sure your program prints something.';
+          } else if (exercise.expected_output) {
+            statusMessage = `Output mismatch. Expected: "${exercise.expected_output}" but got: "${output}"`;
+          } else {
+            statusMessage = 'Test failed. Check your output.';
+          }
+        }
+        
         setLastSubmission({
           status: success ? 'passed' : 'failed',
-          message: success ? 'Test passed! Great work!' : 'Test failed. Check your output.',
+          message: statusMessage,
           executionTime
         });
         return;
@@ -46,9 +60,23 @@ const ExerciseDetail: React.FC<ExerciseDetailProps> = ({ exercise, onBack }) => 
 
       if (error) throw error;
       
+      // Create detailed status message for Supabase mode
+      let statusMessage = '';
+      if (success) {
+        statusMessage = 'Test passed! Solution submitted.';
+      } else {
+        if (!output || output.trim() === '') {
+          statusMessage = 'No output generated. Make sure your program prints something.';
+        } else if (exercise.expected_output) {
+          statusMessage = `Output mismatch. Expected: "${exercise.expected_output}" but got: "${output}"`;
+        } else {
+          statusMessage = 'Test failed. Keep trying!';
+        }
+      }
+      
       setLastSubmission({
         status: success ? 'passed' : 'failed',
-        message: success ? 'Test passed! Solution submitted.' : 'Test failed. Keep trying!',
+        message: statusMessage,
         executionTime
       });
     } catch (error) {
