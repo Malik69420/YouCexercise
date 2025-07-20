@@ -81,111 +81,144 @@ Fix: Check that every '(' has a matching ')'`
     let error = '';
     
     try {
-      // Store variables and their values
-      const variables: { [key: string]: any } = {};
-      
-      // Parse variable declarations and assignments
-      const varDeclarations = code.match(/int\s+(\w+)\s*=\s*([^;]+);/g);
-      if (varDeclarations) {
-        for (const decl of varDeclarations) {
-          const match = decl.match(/int\s+(\w+)\s*=\s*([^;]+);/);
-          if (match) {
-            const varName = match[1];
-            const value = match[2].trim();
-            
-            try {
-              if (/^\d+$/.test(value)) {
-                variables[varName] = parseInt(value);
-              } else if (/^\d+\s*[+\-*/]\s*\d+$/.test(value)) {
-                variables[varName] = Function(`"use strict"; return (${value})`)();
+      // Create a virtual environment to store variables
+      const env: Record<string, any> = {
+        // Add standard C functions
+        printf: (format: string, ...args: any[]) => {
+          let result = '';
+          let argIndex = 0;
+          
+          // Process format string
+          for (let i = 0; i < format.length; i++) {
+            if (format[i] === '%' && i + 1 < format.length) {
+              // Handle format specifier
+              const specifier = format[++i];
+              if (argIndex < args.length) {
+                result += args[argIndex++].toString();
               } else {
-                variables[varName] = value;
+                result += '%' + specifier; // Keep the format specifier if no arg
               }
-            } catch (e) {
-              variables[varName] = value;
+            } else if (format[i] === '\\' && i + 1 < format.length) {
+              // Handle escape sequences
+              const nextChar = format[++i];
+              switch (nextChar) {
+                case 'n': result += '\n'; break;
+                case 't': result += '\t'; break;
+                case 'r': result += '\r'; break;
+                case '\\': result += '\\'; break;
+                default: result += '\\' + nextChar; // Keep unknown escape sequences
+              }
+            } else {
+              // Regular character
+              result += format[i];
             }
+          }
+          
+          output += result;
+          return result.length;
+        }
+      };
+
+      // Extract and process variable declarations
+      const varDeclarations = code.match(/int\s+\w+\s*(?:=\s*[^;]+)?\s*;/g) || [];
+      for (const decl of varDeclarations) {
+        // Handle both declaration and initialization
+        const declMatch = decl.match(/int\s+(\w+)(?:\s*=\s*([^;]+))?/);
+        if (declMatch) {
+          const varName = declMatch[1];
+          const initValue = declMatch[2] ? eval(declMatch[2].trim()) : 0;
+          env[varName] = initValue;
+        }
+      }
+
+      // Process array declarations
+      const arrayDeclarations = code.match(/int\s+\w+\s*\[\]\s*=\s*\{[^}]+\}\s*;/g) || [];
+      for (const decl of arrayDeclarations) {
+        const arrayMatch = decl.match(/int\s+(\w+)\s*\[\]\s*=\s*\{([^}]+)\}\s*;/);
+        if (arrayMatch) {
+          const arrayName = arrayMatch[1];
+          const elements = arrayMatch[2].split(',').map(e => parseInt(e.trim()));
+          env[arrayName] = elements;
+        }
+      }
+
+      // Process for loops
+      const forLoops = code.match(/for\s*\([^;]+;[^;]+;[^)]+\)\s*\{[^}]*\}/g) || [];
+      for (const loop of forLoops) {
+        const loopMatch = loop.match(/for\s*\((.*?);(.*?);(.*?)\)\s*\{([^}]*)\}/s);
+        if (loopMatch) {
+          const [_, init, condition, increment, body] = loopMatch;
+          
+          // Execute initialization
+          if (init.includes('=')) {
+            const [varName, value] = init.split('=').map(s => s.trim());
+            env[varName.replace('int', '').trim()] = eval(value.replace(';', '').trim());
+          }
+          
+          // Execute loop
+          while (eval(condition)) {
+            // Execute loop body
+            const bodyLines = body.split(';').filter(Boolean);
+            for (const line of bodyLines) {
+              const trimmed = line.trim();
+              if (trimmed.startsWith('printf')) {
+                const printfMatch = trimmed.match(/printf\(([^)]+)\)/);
+                if (printfMatch) {
+                  const args = printfMatch[1].split(',').map(a => a.trim().replace(/"/g, ''));
+                  env.printf(...args);
+                }
+              } else if (trimmed.includes('=')) {
+                const [varName, expr] = trimmed.split('=').map(s => s.trim());
+                env[varName] = eval(expr.replace(/[;\s]/g, ''));
+              }
+            }
+            
+            // Execute increment
+            eval(increment);
           }
         }
       }
 
-      // Handle array declarations
-      const arrayDeclarations = code.match(/int\s+(\w+)\[\]\s*=\s*\{([^}]+)\};/g);
-      if (arrayDeclarations) {
-        for (const decl of arrayDeclarations) {
-          const match = decl.match(/int\s+(\w+)\[\]\s*=\s*\{([^}]+)\};/);
-          if (match) {
-            const arrayName = match[1];
-            const elements = match[2].split(',').map(e => parseInt(e.trim()));
-            variables[arrayName] = elements;
+      // Process while loops
+      const whileLoops = code.match(/while\s*\([^)]+\)\s*\{[^}]*\}/g) || [];
+      for (const loop of whileLoops) {
+        const whileMatch = loop.match(/while\s*\(([^)]+)\)\s*\{([^}]*)\}/s);
+        if (whileMatch) {
+          const [_, condition, body] = whileMatch;
+          
+          while (eval(condition)) {
+            // Execute loop body
+            const bodyLines = body.split(';').filter(Boolean);
+            for (const line of bodyLines) {
+              const trimmed = line.trim();
+              if (trimmed.startsWith('printf')) {
+                const printfMatch = trimmed.match(/printf\(([^)]+)\)/);
+                if (printfMatch) {
+                  const args = printfMatch[1].split(',').map(a => a.trim().replace(/"/g, ''));
+                  env.printf(...args);
+                }
+              } else if (trimmed.includes('=')) {
+                const [varName, expr] = trimmed.split('=').map(s => s.trim());
+                env[varName] = eval(expr.replace(/[;\s]/g, ''));
+              }
+            }
           }
         }
       }
       
-      // Handle loops and calculate results
-      this.handleLoops(code, variables);
-      
-      // Process printf statements - IMPROVED REGEX
-      const printfRegex = /printf\s*\(\s*"([^"]*)"(?:\s*,\s*([^)]*))?\s*\)\s*;/g;
-      let match;
-      
-      while ((match = printfRegex.exec(code)) !== null) {
-        let formatString = match[1];
-        const args = match[2];
+      // Process standalone printf statements
+      const printfStatements = code.match(/printf\([^)]+\)\s*;/g) || [];
+      for (const stmt of printfStatements) {
+        if (stmt.includes('for') || stmt.includes('while')) continue; // Skip if part of loop
         
-        // Handle format specifiers
-        if (args) {
-          const argList = args.split(',').map(arg => arg.trim());
-          let argIndex = 0;
-          
-          formatString = formatString.replace(/%[dioxX]/g, () => {
-            if (argIndex < argList.length) {
-              const arg = argList[argIndex++];
-              
-              if (variables.hasOwnProperty(arg)) {
-                return variables[arg].toString();
-              }
-              
-              if (/^\d+$/.test(arg)) {
-                return arg;
-              } else {
-                try {
-                  let expression = arg;
-                  for (const [varName, value] of Object.entries(variables)) {
-                    expression = expression.replace(new RegExp(`\\b${varName}\\b`, 'g'), value.toString());
-                  }
-                  const result = Function(`"use strict"; return (${expression})`)();
-                  return result.toString();
-                } catch {
-                  return arg;
-                }
-              }
-            }
-            return '%d';
-          });
-          
-          formatString = formatString.replace(/%[sc]/g, () => {
-            if (argIndex < argList.length) {
-              const arg = argList[argIndex++];
-              if (variables.hasOwnProperty(arg)) {
-                return variables[arg].toString();
-              }
-              return arg.replace(/"/g, '');
-            }
-            return '%s';
-          });
+        const printfMatch = stmt.match(/printf\(([^)]+)\)/);
+        if (printfMatch) {
+          const args = printfMatch[1].split(',').map(a => a.trim().replace(/"/g, ''));
+          env.printf(...args);
         }
-        
-        // Handle escape sequences
-        formatString = formatString
-          .replace(/\\n/g, '\n')
-          .replace(/\\t/g, '\t')
-          .replace(/\\r/g, '\r')
-          .replace(/\\\\/g, '\\');
-        
-        output += formatString;
       }
       
-      // If no printf found but code seems valid, provide feedback
+      // If no output was generated but code seems valid, provide feedback
       if (!output && code.includes('main')) {
         error = 'No output generated. Make sure you have printf statements to display results.';
       }
@@ -194,7 +227,7 @@ Fix: Check that every '(' has a matching ')'`
       error = `Runtime Error: ${e}`;
     }
     
-    return { output: output || '', error };
+    return { output, error };
   }
   
   private handleLoops(code: string, variables: { [key: string]: any }): void {
@@ -304,23 +337,23 @@ Fix: Check that every '(' has a matching ')'`
   }
   
   validateOutput(actualOutput: string, expectedOutput: string): boolean {
-    // COMPLETELY REWRITTEN OUTPUT VALIDATION
+    // Normalize both outputs for comparison
+    const normalize = (str: string) => 
+      str.replace(/[\r\n]+/g, '\n')  // Normalize line endings
+         .replace(/[\s]+/g, ' ')     // Replace all whitespace with single space
+         .trim();
+    
+    const normalizedExpected = normalize(expectedOutput);
+    const normalizedActual = normalize(actualOutput);
+    
+    // For debugging
     console.log('=== OUTPUT VALIDATION DEBUG ===');
-    console.log('Expected:', JSON.stringify(expectedOutput));
-    console.log('Actual:', JSON.stringify(actualOutput));
-    
-    // Remove all whitespace and compare
-    const cleanExpected = expectedOutput.replace(/\s+/g, '').toLowerCase();
-    const cleanActual = actualOutput.replace(/\s+/g, '').toLowerCase();
-    
-    console.log('Clean Expected:', cleanExpected);
-    console.log('Clean Actual:', cleanActual);
-    
-    const isMatch = cleanExpected === cleanActual;
-    console.log('Match Result:', isMatch);
+    console.log('Expected:', JSON.stringify(normalizedExpected));
+    console.log('Actual:  ', JSON.stringify(normalizedActual));
+    console.log('Match:   ', normalizedExpected === normalizedActual);
     console.log('=== END DEBUG ===');
     
-    return isMatch;
+    return normalizedExpected === normalizedActual;
   }
 }
 
