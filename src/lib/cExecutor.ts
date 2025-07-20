@@ -83,10 +83,9 @@ Fix: Check that every '(' has a matching ')'`
     try {
       // Create execution context
       const context = this.createExecutionContext(code);
-      context.originalCode = code;
       
       // Execute the program logic
-      output = this.runProgram(context);
+      output = this.runProgram(context, code);
       
     } catch (e) {
       error = `Runtime Error: ${e}`;
@@ -100,52 +99,14 @@ Fix: Check that every '(' has a matching ')'`
       variables: {},
       arrays: {},
       output: '',
-      input: this.extractInputValues(code), // For scanf simulation
+      input: [], // For scanf simulation
       inputIndex: 0
     };
     
-    // Parse variable declarations
+    // Parse variable declarations and initializations
     this.parseVariableDeclarations(code, context);
     
-    // Parse array declarations
-    this.parseArrayDeclarations(code, context);
-    
     return context;
-  }
-  
-  private extractInputValues(code: string): number[] {
-    // For exercises that use scanf, we'll simulate input based on the expected output
-    // This is a simplified approach for educational purposes
-    
-    // Check if code contains scanf
-    if (code.includes('scanf')) {
-      // For now, return some default values
-      // In a real implementation, you'd want to provide input through the UI
-      return [5, 10, 15]; // Default input values
-    }
-    
-    return [];
-  }
-  
-  private handleScanf(code: string, context: any) {
-    // Handle scanf statements
-    const scanfRegex = /scanf\s*\(\s*"([^"]*)"(?:\s*,\s*([^)]*))?\s*\)\s*;/g;
-    let match;
-    
-    while ((match = scanfRegex.exec(code)) !== null) {
-      const formatString = match[1];
-      const args = match[2];
-      
-      if (args && context.input.length > context.inputIndex) {
-        const argList = args.split(',').map(arg => arg.trim().replace('&', ''));
-        
-        for (const arg of argList) {
-          if (context.inputIndex < context.input.length) {
-            context.variables[arg] = context.input[context.inputIndex++];
-          }
-        }
-      }
-    }
   }
   
   private parseVariableDeclarations(code: string, context: any) {
@@ -168,18 +129,6 @@ Fix: Check that every '(' has a matching ')'`
       if (!(varName in context.variables)) {
         context.variables[varName] = 0; // Default value
       }
-    }
-  }
-  
-  private parseArrayDeclarations(code: string, context: any) {
-    // Parse array declarations like: int arr[] = {1, 2, 3, 4, 5};
-    const arrayRegex = /int\s+(\w+)\[\]\s*=\s*\{([^}]+)\};/g;
-    let match;
-    
-    while ((match = arrayRegex.exec(code)) !== null) {
-      const arrayName = match[1];
-      const elements = match[2].split(',').map(e => parseInt(e.trim()));
-      context.arrays[arrayName] = elements;
     }
   }
   
@@ -216,21 +165,17 @@ Fix: Check that every '(' has a matching ')'`
     }
   }
   
-  private runProgram(context: any): string {
-    const code = context.originalCode || '';
+  private runProgram(context: any, code: string): string {
     let output = '';
     
-    // Handle scanf statements first
-    this.handleScanf(code, context);
+    // Execute assignments first
+    this.executeAssignments(code, context);
     
-    // Execute loops first
+    // Execute loops
     this.executeLoops(code, context);
     
-    // Execute conditional statements
+    // Execute conditionals
     this.executeConditionals(code, context);
-    
-    // Execute assignments
-    this.executeAssignments(code, context);
     
     // Process printf statements
     output = this.processPrintfStatements(code, context);
@@ -238,53 +183,26 @@ Fix: Check that every '(' has a matching ')'`
     return output;
   }
   
-  private executeLoops(code: string, context: any) {
-    // Handle for loops
-    const forLoopRegex = /for\s*\(\s*(\w+)\s*=\s*(\d+)\s*;\s*\1\s*<=?\s*(\w+|\d+)\s*;\s*\1\+\+\s*\)\s*\{([^}]+)\}/g;
+  private executeAssignments(code: string, context: any) {
+    // Handle regular assignments (not declarations)
+    const assignRegex = /(\w+)\s*=\s*([^;]+);/g;
     let match;
     
-    while ((match = forLoopRegex.exec(code)) !== null) {
-      const loopVar = match[1];
-      const start = parseInt(match[2]);
-      const endExpr = match[3];
-      const loopBody = match[4];
+    while ((match = assignRegex.exec(code)) !== null) {
+      const varName = match[1];
+      const expression = match[2].trim();
       
-      const end = /^\d+$/.test(endExpr) ? parseInt(endExpr) : context.variables[endExpr] || 0;
-      
-      for (let i = start; i <= end; i++) {
-        context.variables[loopVar] = i;
-        this.executeLoopBody(loopBody, context);
+      // Skip if this is a declaration (already handled)
+      const beforeMatch = code.substring(0, match.index);
+      if (beforeMatch.includes(`int ${varName}`)) {
+        continue;
       }
+      
+      context.variables[varName] = this.evaluateExpression(expression, context);
     }
     
-    // Handle while loops
-    const whileLoopRegex = /while\s*\(\s*(\w+)\s*<=?\s*(\w+|\d+)\s*\)\s*\{([^}]+)\}/g;
-    while ((match = whileLoopRegex.exec(code)) !== null) {
-      const conditionVar = match[1];
-      const limitExpr = match[2];
-      const loopBody = match[3];
-      
-      const limit = /^\d+$/.test(limitExpr) ? parseInt(limitExpr) : context.variables[limitExpr] || 0;
-      
-      while ((context.variables[conditionVar] || 0) <= limit) {
-        this.executeLoopBody(loopBody, context);
-        if (loopBody.includes(`${conditionVar}++`)) {
-          context.variables[conditionVar] = (context.variables[conditionVar] || 0) + 1;
-        }
-      }
-    }
-  }
-  
-  private executeLoopBody(loopBody: string, context: any) {
-    // Handle assignments in loop body
-    this.executeAssignments(loopBody, context);
-  }
-  
-  private executeAssignments(code: string, context: any) {
     // Handle compound assignments like factorial *= i
     const compoundAssignRegex = /(\w+)\s*\*=\s*([^;]+);/g;
-    let match;
-    
     while ((match = compoundAssignRegex.exec(code)) !== null) {
       const varName = match[1];
       const expression = match[2].trim();
@@ -306,62 +224,67 @@ Fix: Check that every '(' has a matching ')'`
         context.variables[varName] += value;
       }
     }
+  }
+  
+  private executeLoops(code: string, context: any) {
+    // Handle for loops
+    const forLoopRegex = /for\s*\(\s*(\w+)\s*=\s*(\d+)\s*;\s*\1\s*<=?\s*(\w+|\d+)\s*;\s*\1\+\+\s*\)\s*\{([^}]+)\}/g;
+    let match;
     
-    // Handle regular assignments
-    const assignRegex = /(\w+)\s*=\s*([^;]+);/g;
-    while ((match = assignRegex.exec(code)) !== null) {
+    while ((match = forLoopRegex.exec(code)) !== null) {
+      const loopVar = match[1];
+      const start = parseInt(match[2]);
+      const endExpr = match[3];
+      const loopBody = match[4];
+      
+      const end = /^\d+$/.test(endExpr) ? parseInt(endExpr) : context.variables[endExpr] || 0;
+      
+      for (let i = start; i <= end; i++) {
+        context.variables[loopVar] = i;
+        this.executeLoopBody(loopBody, context);
+      }
+    }
+  }
+  
+  private executeLoopBody(loopBody: string, context: any) {
+    // Handle compound assignments in loop body
+    const compoundAssignRegex = /(\w+)\s*\*=\s*([^;]+);/g;
+    let match;
+    
+    while ((match = compoundAssignRegex.exec(loopBody)) !== null) {
       const varName = match[1];
       const expression = match[2].trim();
       
-      // Skip if this is a declaration (already handled)
-      if (code.substring(0, match.index).includes(`int ${varName}`)) {
-        continue;
+      if (varName in context.variables) {
+        const value = this.evaluateExpression(expression, context);
+        context.variables[varName] *= value;
       }
+    }
+    
+    // Handle other assignments
+    const assignRegex = /(\w+)\s*=\s*([^;]+);/g;
+    while ((match = assignRegex.exec(loopBody)) !== null) {
+      const varName = match[1];
+      const expression = match[2].trim();
       
       context.variables[varName] = this.evaluateExpression(expression, context);
     }
   }
   
   private executeConditionals(code: string, context: any) {
-    // Handle if-else if-else chains
-    const ifElseIfRegex = /if\s*\(([^)]+)\)\s*\{([^}]+)\}\s*else\s+if\s*\(([^)]+)\)\s*\{([^}]+)\}(?:\s*else\s*\{([^}]+)\})?/g;
-    let match;
-    
-    while ((match = ifElseIfRegex.exec(code)) !== null) {
-      const condition1 = match[1].trim();
-      const ifBody1 = match[2].trim();
-      const condition2 = match[3].trim();
-      const ifBody2 = match[4].trim();
-      const elseBody = match[5] ? match[5].trim() : '';
-      
-      if (this.evaluateCondition(condition1, context)) {
-        this.executeBlock(ifBody1, context);
-      } else if (this.evaluateCondition(condition2, context)) {
-        this.executeBlock(ifBody2, context);
-      } else if (elseBody) {
-        this.executeBlock(elseBody, context);
-      }
-    }
-    
     // Handle if-else statements
     const ifElseRegex = /if\s*\(([^)]+)\)\s*\{([^}]+)\}\s*else\s*\{([^}]+)\}/g;
-    match = null;
+    let match;
     
     while ((match = ifElseRegex.exec(code)) !== null) {
       const condition = match[1].trim();
       const ifBody = match[2].trim();
       const elseBody = match[3].trim();
       
-      // Skip if this is part of an if-else if chain (already processed)
-      const beforeMatch = code.substring(0, match.index);
-      if (beforeMatch.includes('else if')) {
-        continue;
-      }
-      
       if (this.evaluateCondition(condition, context)) {
-        this.executeBlock(ifBody, context);
+        context.conditionalOutput = this.processPrintfInBlock(ifBody, context);
       } else {
-        this.executeBlock(elseBody, context);
+        context.conditionalOutput = this.processPrintfInBlock(elseBody, context);
       }
     }
     
@@ -371,8 +294,14 @@ Fix: Check that every '(' has a matching ')'`
       const condition = match[1].trim();
       const ifBody = match[2].trim();
       
+      // Skip if this is part of an if-else (already processed)
+      const afterMatch = code.substring(match.index + match[0].length);
+      if (afterMatch.trim().startsWith('else')) {
+        continue;
+      }
+      
       if (this.evaluateCondition(condition, context)) {
-        this.executeBlock(ifBody, context);
+        context.conditionalOutput = this.processPrintfInBlock(ifBody, context);
       }
     }
   }
@@ -385,17 +314,6 @@ Fix: Check that every '(' has a matching ')'`
       evalCondition = evalCondition.replace(regex, value.toString());
     }
     
-    // Handle range conditions like score >= 90 && score <= 100
-    evalCondition = evalCondition
-      .replace(/&&/g, ' && ')
-      .replace(/\|\|/g, ' || ')
-      .replace(/==/g, ' == ')
-      .replace(/!=/g, ' != ')
-      .replace(/>=/g, ' >= ')
-      .replace(/<=/g, ' <= ')
-      .replace(/>/g, ' > ')
-      .replace(/</g, ' < ');
-    
     try {
       return Function(`"use strict"; return (${evalCondition})`)();
     } catch {
@@ -403,38 +321,34 @@ Fix: Check that every '(' has a matching ')'`
     }
   }
   
-  private executeBlock(block: string, context: any) {
-    // Execute assignments in the block
-    this.executeAssignments(block, context);
+  private processPrintfInBlock(block: string, context: any): string {
+    const printfRegex = /printf\s*\(\s*"([^"]*)"(?:\s*,\s*([^)]*))?\s*\)/g;
+    let match;
+    let output = '';
     
-    // Store printf statements for later processing
-    const printfRegex = /printf\s*\([^)]+\)\s*;/g;
-    const printfMatches = block.match(printfRegex);
-    if (printfMatches) {
-      context.conditionalPrintfs = (context.conditionalPrintfs || []).concat(printfMatches);
+    while ((match = printfRegex.exec(block)) !== null) {
+      output += this.processSinglePrintf(match[0], context);
     }
+    
+    return output;
   }
   
   private processPrintfStatements(code: string, context: any): string {
     let output = '';
     
-    // Process conditional printfs first
-    if (context.conditionalPrintfs) {
-      for (const printfStmt of context.conditionalPrintfs) {
-        output += this.processSinglePrintf(printfStmt, context);
-      }
+    // First, add any conditional output
+    if (context.conditionalOutput) {
+      output += context.conditionalOutput;
+      return output;
     }
     
-    // Process regular printf statements
+    // Process regular printf statements (outside of conditionals)
     const printfRegex = /printf\s*\(\s*"([^"]*)"(?:\s*,\s*([^)]*))?\s*\)\s*;/g;
     let match;
     
     while ((match = printfRegex.exec(code)) !== null) {
-      // Skip if this printf is inside an if-else block (already processed)
+      // Check if this printf is inside braces (conditional block)
       const beforeMatch = code.substring(0, match.index);
-      const afterMatch = code.substring(match.index + match[0].length);
-      
-      // Check if this printf is inside braces
       const openBraces = (beforeMatch.match(/\{/g) || []).length;
       const closeBraces = (beforeMatch.match(/\}/g) || []).length;
       
@@ -461,8 +375,8 @@ Fix: Check that every '(' has a matching ')'`
       const argList = args.split(',').map(arg => arg.trim());
       let argIndex = 0;
       
-      // Replace %d, %i, %o, %x, %X with actual values
-      formatString = formatString.replace(/%[dioxX]/g, () => {
+      // Replace %d, %i with actual values
+      formatString = formatString.replace(/%[di]/g, () => {
         if (argIndex < argList.length) {
           const arg = argList[argIndex++];
           
@@ -485,18 +399,6 @@ Fix: Check that every '(' has a matching ')'`
           }
         }
         return '%d';
-      });
-      
-      // Replace %s, %c with string values
-      formatString = formatString.replace(/%[sc]/g, () => {
-        if (argIndex < argList.length) {
-          const arg = argList[argIndex++];
-          if (context.variables.hasOwnProperty(arg)) {
-            return context.variables[arg].toString();
-          }
-          return arg.replace(/"/g, '');
-        }
-        return '%s';
       });
     }
     
@@ -539,29 +441,19 @@ Fix: Check that every '(' has a matching ')'`
   }
   
   validateOutput(actualOutput: string, expectedOutput: string): boolean {
-    console.log('=== OUTPUT VALIDATION DEBUG ===');
-    console.log('Expected:', JSON.stringify(expectedOutput));
-    console.log('Actual:', JSON.stringify(actualOutput));
-    
     // Normalize both outputs by removing extra whitespace and newlines
     const normalizeOutput = (str: string) => {
       return str
         .trim()
         .replace(/\s+/g, ' ')
-        .toLowerCase();
+        .replace(/\n+/g, '\n')
+        .trim();
     };
     
     const normalizedExpected = normalizeOutput(expectedOutput);
     const normalizedActual = normalizeOutput(actualOutput);
     
-    console.log('Normalized Expected:', normalizedExpected);
-    console.log('Normalized Actual:', normalizedActual);
-    
-    const isMatch = normalizedExpected === normalizedActual;
-    console.log('Match Result:', isMatch);
-    console.log('=== END DEBUG ===');
-    
-    return isMatch;
+    return normalizedExpected === normalizedActual;
   }
 }
 
